@@ -1,0 +1,2294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>预算结算管理系统</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --c-primary:#2563eb;--c-primary-h:#1d4ed8;--c-primary-l:#eff6ff;
+  --c-success:#059669;--c-success-l:#ecfdf5;
+  --c-warn:#d97706;--c-warn-l:#fffbeb;
+  --c-danger:#dc2626;--c-danger-l:#fef2f2;
+  --c-purple:#7c3aed;--c-purple-l:#f5f3ff;
+  --c-bg:#f1f5f9;--c-card:#ffffff;
+  --c-border:#e2e8f0;--c-border2:#cbd5e1;
+  --c-text:#1e293b;--c-text2:#475569;--c-text3:#94a3b8;
+  --radius:12px;--radius-sm:8px;
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.05);
+  --shadow-md:0 4px 12px rgba(0,0,0,.08);
+  --shadow-lg:0 10px 25px rgba(0,0,0,.1);
+  --sidebar:220px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Noto Sans SC',sans-serif;background:var(--c-bg);color:var(--c-text);font-size:14px}
+
+/* ── layout ── */
+.wrap{display:flex;min-height:100vh}
+.sidebar{width:var(--sidebar);background:#0f172a;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+.sidebar-brand{padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;gap:10px}
+.brand-icon{width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#2563eb,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.brand-name{font-size:14px;font-weight:700;color:#f1f5f9;line-height:1.2}
+.brand-sub{font-size:11px;color:#64748b}
+.sidebar-nav{flex:1;padding:10px 0;overflow-y:auto}
+.nav-group{font-size:10.5px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.08em;padding:10px 16px 4px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 16px;cursor:pointer;font-size:13.5px;color:#94a3b8;border-left:3px solid transparent;transition:all .15s}
+.nav-item:hover{color:#f1f5f9;background:rgba(255,255,255,.04)}
+.nav-item.active{color:#fff;background:rgba(37,99,235,.2);border-left-color:#2563eb}
+.nav-item .ni{font-size:15px;width:18px;text-align:center}
+.sidebar-foot{padding:14px 16px;border-top:1px solid rgba(255,255,255,.07);font-size:11px;color:#475569}
+
+.main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column}
+.topbar{background:#fff;border-bottom:1px solid var(--c-border);height:58px;padding:0 26px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:var(--shadow)}
+.topbar-left{display:flex;align-items:center;gap:10px}
+.topbar-title{font-size:16px;font-weight:700}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.topbar-date{font-size:12px;color:var(--c-text3)}
+
+/* ── buttons ── */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s;white-space:nowrap;line-height:1}
+.btn-primary{background:var(--c-primary);color:#fff}.btn-primary:hover{background:var(--c-primary-h)}
+.btn-success{background:var(--c-success);color:#fff}.btn-success:hover{background:#047857}
+.btn-outline{background:#fff;color:var(--c-text2);border:1px solid var(--c-border2)}.btn-outline:hover{background:var(--c-bg)}
+.btn-danger{background:var(--c-danger);color:#fff}.btn-danger:hover{background:#b91c1c}
+.btn-warn{background:var(--c-warn);color:#fff}.btn-warn:hover{background:#b45309}
+.btn-purple{background:var(--c-purple);color:#fff}.btn-purple:hover{background:#6d28d9}
+.btn-xs{padding:4px 9px;font-size:12px;border-radius:6px}
+.btn-sm{padding:6px 11px;font-size:12.5px}
+
+/* ── cards ── */
+.card{background:var(--c-card);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.card-head{padding:14px 18px;border-bottom:1px solid var(--c-border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:14px;font-weight:700}
+.card-sub{font-size:12px;color:var(--c-text3);margin-top:2px}
+.card-body{padding:18px}
+
+/* ── pages ── */
+.page{display:none;padding:22px 26px}
+.page.active{display:block}
+
+/* ── stat cards ── */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.stat{background:var(--c-card);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px;display:flex;align-items:flex-start;gap:12px}
+.stat-ico{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.stat-val{font-size:22px;font-weight:800;line-height:1;color:var(--c-text)}
+.stat-lbl{font-size:12px;color:var(--c-text3);margin-bottom:4px}
+.stat-hint{font-size:11.5px;color:var(--c-text3);margin-top:3px}
+
+/* ── badge ── */
+.badge{display:inline-flex;align-items:center;padding:2px 9px;border-radius:99px;font-size:11.5px;font-weight:600}
+.bd-blue{background:var(--c-primary-l);color:var(--c-primary)}
+.bd-green{background:var(--c-success-l);color:var(--c-success)}
+.bd-warn{background:var(--c-warn-l);color:var(--c-warn)}
+.bd-red{background:var(--c-danger-l);color:var(--c-danger)}
+.bd-purple{background:var(--c-purple-l);color:var(--c-purple)}
+.bd-gray{background:#f1f5f9;color:#64748b}
+.badge.locked::before{content:"🔒 ";font-size:10px}
+
+/* ── tables ── */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{background:#f8fafc;color:var(--c-text2);font-weight:700;padding:10px 14px;text-align:left;border-bottom:2px solid var(--c-border);white-space:nowrap}
+tbody tr{border-bottom:1px solid #f1f5f9;transition:background .1s}
+tbody tr:hover{background:#fafbff}
+tbody td{padding:10px 14px;color:var(--c-text);vertical-align:middle}
+td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.tr-sub td{background:#fafbff;padding-left:30px}
+.tr-product td{background:var(--c-primary-l);font-weight:700}
+.tr-total{background:linear-gradient(90deg,#eff6ff,#f5f3ff) !important}
+.tr-total td{font-weight:800;color:var(--c-primary)}
+
+/* ── forms ── */
+.fg{display:flex;flex-direction:column;gap:4px}
+label{font-size:12.5px;font-weight:600;color:var(--c-text2)}
+input,select,textarea{padding:8px 11px;border:1.5px solid var(--c-border2);border-radius:var(--radius-sm);font-size:13px;color:var(--c-text);background:#fff;outline:none;transition:border .15s,box-shadow .15s;width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--c-primary);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+input[readonly]{background:#f8fafc;color:var(--c-text2)}
+.form-grid{display:grid;gap:14px}
+.span2{grid-column:span 2}
+.span3{grid-column:span 3}
+
+/* ── upload ── */
+.drop-zone{border:2px dashed var(--c-border2);border-radius:var(--radius);padding:44px 20px;text-align:center;cursor:pointer;transition:all .2s;background:#fafbff;position:relative}
+.drop-zone:hover,.drop-zone.over{border-color:var(--c-primary);background:var(--c-primary-l)}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.dz-icon{font-size:44px;margin-bottom:10px}
+.dz-title{font-size:15px;font-weight:700;color:var(--c-text2);margin-bottom:5px}
+.dz-hint{font-size:12.5px;color:var(--c-text3)}
+
+/* ── mapping grid ── */
+.map-grid{display:grid;grid-template-columns:1fr 20px 1fr;gap:6px 8px;align-items:center}
+.map-src{font-size:12.5px;font-weight:600;color:var(--c-primary);background:var(--c-primary-l);padding:7px 10px;border-radius:6px}
+.map-arr{text-align:center;color:var(--c-text3)}
+
+/* ── alert ── */
+.alert{padding:10px 14px;border-radius:8px;font-size:13px;display:flex;gap:8px;align-items:flex-start;margin-bottom:14px}
+.alert-info{background:var(--c-primary-l);color:var(--c-primary);border:1px solid #bfdbfe}
+.alert-warn{background:var(--c-warn-l);color:var(--c-warn);border:1px solid #fde68a}
+.alert-success{background:var(--c-success-l);color:var(--c-success);border:1px solid #a7f3d0}
+
+/* ── charts ── */
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px}
+.chart-box{background:var(--c-card);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
+.chart-box-title{font-size:13.5px;font-weight:700;margin-bottom:14px;color:var(--c-text)}
+.chart-wrap{position:relative;height:280px}
+.chart-wrap-sm{position:relative;height:220px}
+
+/* ── progress ── */
+.prog-row{margin-bottom:11px}
+.prog-head{display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px}
+.prog-lbl{font-weight:600;color:var(--c-text2)}
+.prog-val{color:var(--c-text3)}
+.prog-track{height:8px;background:var(--c-border);border-radius:99px;overflow:hidden}
+.prog-fill{height:100%;border-radius:99px;transition:width .6s}
+
+/* ── modal ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:200;display:none;align-items:center;justify-content:center}
+.overlay.show{display:flex}
+.modal{background:#fff;border-radius:14px;box-shadow:var(--shadow-lg);width:560px;max-width:95vw;max-height:90vh;display:flex;flex-direction:column;overflow:hidden}
+.modal-lg{width:760px}
+.modal-head{padding:16px 22px;border-bottom:1px solid var(--c-border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:15px;font-weight:700}
+.modal-close{width:27px;height:27px;border-radius:50%;border:none;background:#f1f5f9;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--c-text2);font-size:15px}
+.modal-close:hover{background:var(--c-border2)}
+.modal-body{padding:22px;overflow-y:auto;flex:1}
+.modal-foot{padding:14px 22px;border-top:1px solid var(--c-border);display:flex;justify-content:flex-end;gap:10px}
+
+/* ── toast ── */
+.toasts{position:fixed;top:68px;right:22px;z-index:999;display:flex;flex-direction:column;gap:8px}
+.toast{background:#fff;border-radius:10px;box-shadow:var(--shadow-lg);padding:11px 15px;display:flex;align-items:center;gap:9px;font-size:13px;min-width:270px;max-width:360px;border-left:4px solid var(--c-primary);animation:tIn .3s ease}
+.toast.ok{border-left-color:var(--c-success)}.toast.err{border-left-color:var(--c-danger)}.toast.warn{border-left-color:var(--c-warn)}
+@keyframes tIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+@keyframes tOut{to{opacity:0;transform:translateX(30px)}}
+
+/* ── tabs ── */
+.tabs{display:flex;gap:2px;background:#f1f5f9;border-radius:10px;padding:3px;margin-bottom:18px}
+.tab{flex:1;padding:7px 10px;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;background:transparent;color:var(--c-text3);transition:all .15s}
+.tab.active{background:#fff;color:var(--c-primary);box-shadow:var(--shadow)}
+
+/* ── empty ── */
+.empty{padding:40px 20px;text-align:center;color:var(--c-text3)}
+.empty .ei{font-size:40px;margin-bottom:10px}
+.empty p{font-size:13px}
+
+/* ── inline edit ── */
+.editable{border:none;background:transparent;color:inherit;font-size:inherit;font-weight:inherit;padding:0;width:100%;cursor:pointer;text-align:right}
+.editable:focus{background:#fff;border:1.5px solid var(--c-primary);border-radius:4px;padding:2px 5px;cursor:text;box-shadow:0 0 0 2px rgba(37,99,235,.1)}
+
+/* ── locked tag ── */
+.lock-icon{font-size:11px;color:var(--c-warn);margin-left:3px;cursor:help}
+
+/* ── scrollbar ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:var(--c-border2);border-radius:99px}
+
+/* responsive */
+@media(max-width:1100px){.stats{grid-template-columns:repeat(2,1fr)}.chart-grid{grid-template-columns:1fr}}
+@media(max-width:800px){:root{--sidebar:0px}.sidebar{transform:translateX(-100%)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<!-- ═══ SIDEBAR ═══ -->
+<aside class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">💰</div>
+    <div><div class="brand-name">预算结算系统</div><div class="brand-sub">Budget Settlement</div></div>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-group">总览</div>
+    <div class="nav-item active" data-page="dashboard" onclick="nav('dashboard')"><span class="ni">📊</span>工作台</div>
+    <div class="nav-group">数据管理</div>
+    <div class="nav-item" data-page="pricelib" onclick="nav('pricelib')"><span class="ni">🏷️</span>单价库</div>
+    <div class="nav-item" data-page="upload" onclick="nav('upload')"><span class="ni">📁</span>报表上传</div>
+    <div class="nav-item" data-page="bizmanage" onclick="nav('bizmanage')"><span class="ni">⚙️</span>业务线管理</div>
+    <div class="nav-item" data-page="detail" onclick="nav('detail')"><span class="ni">📋</span>费用明细</div>
+    <div class="nav-group">报表分析</div>
+    <div class="nav-item" data-page="report" onclick="nav('report')"><span class="ni">📈</span>可视化报表</div>
+    <div class="nav-item" data-page="exportpage" onclick="nav('exportpage')"><span class="ni">📤</span>导出报表</div>
+  </nav>
+  <div class="sidebar-foot">v3.0 · 2026</div>
+</aside>
+
+<!-- ═══ MAIN ═══ -->
+<div class="main">
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-title" id="topbar-title">工作台</div>
+    </div>
+    <div class="topbar-right">
+      <span class="topbar-date" id="topbar-date"></span>
+      <button class="btn btn-primary btn-sm" onclick="nav('upload')">+ 上传报表</button>
+    </div>
+  </header>
+
+  <!-- ══════════ DASHBOARD ══════════ -->
+  <div class="page active" id="page-dashboard">
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-ico" style="background:#eff6ff">💰</div>
+        <div>
+          <div class="stat-lbl">总费用</div>
+          <div class="stat-val" id="s-total">¥0</div>
+          <div class="stat-hint">= 各产品线费用之和</div>
+        </div>
+      </div>
+      <div class="stat">
+        <div class="stat-ico" style="background:#ecfdf5">📦</div>
+        <div>
+          <div class="stat-lbl">产品线数量</div>
+          <div class="stat-val" id="s-pcount">0</div>
+          <div class="stat-hint">条</div>
+        </div>
+      </div>
+      <div class="stat">
+        <div class="stat-ico" style="background:#f5f3ff">🔀</div>
+        <div>
+          <div class="stat-lbl">业务线数量</div>
+          <div class="stat-val" id="s-bcount">0</div>
+          <div class="stat-hint">条</div>
+        </div>
+      </div>
+      <div class="stat">
+        <div class="stat-ico" style="background:#fffbeb">📄</div>
+        <div>
+          <div class="stat-lbl">总审核量</div>
+          <div class="stat-val" id="s-qty">0</div>
+          <div class="stat-hint">单</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 380px;gap:16px;margin-bottom:20px">
+      <div class="chart-box">
+        <div class="chart-box-title">📊 各产品线费用分布</div>
+        <div class="chart-wrap"><canvas id="cPie"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">📈 产品线费用占比</div></div>
+        <div class="card-body" id="dash-progress"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div><div class="card-title">📋 费用汇总表</div><div class="card-sub">产品线 → 业务线 两级汇总</div></div>
+      </div>
+      <div class="card-body" style="padding:0">
+        <div class="tbl-wrap">
+          <table id="summary-table">
+            <thead><tr>
+              <th>产品线 / 业务线</th>
+              <th class="num">单条价格 (¥)</th>
+              <th class="num">审核量</th>
+              <th class="num">业务线费用 (¥)</th>
+              <th class="num">占总费用</th>
+            </tr></thead>
+            <tbody id="summary-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ PRICE LIB ══════════ -->
+  <div class="page" id="page-pricelib">
+    <div style="display:grid;grid-template-columns:1fr 340px;gap:18px">
+      <div>
+        <!-- 导入单价文件 -->
+        <div class="card" style="margin-bottom:18px">
+          <div class="card-head">
+            <div><div class="card-title">🏷️ 单价库管理</div><div class="card-sub" id="pl-count-lbl">共 0 条</div></div>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-outline btn-sm" onclick="openAddPriceLib()">+ 手动新增</button>
+              <button class="btn btn-primary btn-sm" onclick="document.getElementById('pl-file-inp').click()">📥 导入单价表</button>
+              <input type="file" id="pl-file-inp" accept=".xlsx,.xls,.csv" style="display:none" onchange="onPriceLibFileSelect(event)" />
+            </div>
+          </div>
+          <div class="card-body" style="padding:0">
+            <table>
+              <thead><tr>
+                <th>业务线名称</th>
+                <th>所属产品线</th>
+                <th class="num">固定单价 (¥)</th>
+                <th>备注</th>
+                <th>操作</th>
+              </tr></thead>
+              <tbody id="pl-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div>
+        <!-- 格式说明 -->
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-head"><div class="card-title">📌 单价表格式</div></div>
+          <div class="card-body" style="font-size:13px;color:var(--c-text2);line-height:1.9">
+            <b>Excel 必须包含：</b>
+            <ul style="padding-left:16px;margin:4px 0 10px">
+              <li>业务线 / Business Line</li>
+              <li>单价 / Unit Price / 价格</li>
+            </ul>
+            <b>可选字段：</b>
+            <ul style="padding-left:16px;margin:4px 0">
+              <li>产品线（用于归类）</li>
+              <li>备注</li>
+            </ul>
+            <div class="alert alert-info" style="margin-top:12px;font-size:12px">
+              💡 单价库为全局固定价格表，上传审核量时将自动从此库匹配单价
+            </div>
+            <div class="alert alert-warn" style="margin-top:8px;font-size:12px">
+              🔄 重复导入同名业务线将更新单价
+            </div>
+          </div>
+        </div>
+        <!-- 导入状态 -->
+        <div class="card" id="pl-import-card" style="display:none">
+          <div class="card-head"><div class="card-title">🔗 字段映射</div></div>
+          <div class="card-body">
+            <div id="pl-map-content"></div>
+            <div style="margin-top:14px;display:flex;gap:8px">
+              <button class="btn btn-primary" onclick="doPriceLibImport()">✅ 确认导入单价</button>
+              <button class="btn btn-outline" onclick="resetPriceLibImport()">取消</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ UPLOAD ══════════ -->
+  <div class="page" id="page-upload">
+    <div style="display:grid;grid-template-columns:1fr 320px;gap:20px">
+      <div>
+        <div class="card" style="margin-bottom:18px">
+          <div class="card-head"><div><div class="card-title">📁 上传预算报表</div><div class="card-sub">Excel / CSV · 自动识别字段</div></div></div>
+          <div class="card-body">
+            <div class="drop-zone" id="drop-zone">
+              <input type="file" id="file-inp" accept=".xlsx,.xls,.csv" onchange="onFileSelect(event)" />
+              <div class="dz-icon">📄</div>
+              <div class="dz-title">拖拽文件到此处，或点击选择</div>
+              <div class="dz-hint" style="margin-bottom:10px">支持 .xlsx / .xls / .csv</div>
+              <div style="display:flex;justify-content:center;gap:8px">
+                <span class="badge bd-blue">xlsx</span>
+                <span class="badge bd-blue">xls</span>
+                <span class="badge bd-gray">csv</span>
+              </div>
+            </div>
+            <div id="parse-result" style="display:none;margin-top:14px"></div>
+          </div>
+        </div>
+
+        <!-- Column mapping -->
+        <div class="card" id="map-card" style="display:none;margin-bottom:18px">
+          <div class="card-head"><div><div class="card-title">🔗 字段映射</div><div class="card-sub">确认列名与系统字段的对应关系</div></div></div>
+          <div class="card-body">
+            <div class="alert alert-info">💡 系统已自动识别，请检查后点击「确认导入」</div>
+            <div id="map-content"></div>
+            <div style="margin-top:16px;display:flex;gap:10px">
+              <button class="btn btn-primary" onclick="doImport()">✅ 确认导入</button>
+              <button class="btn btn-outline" onclick="resetUpload()">取消</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Preview -->
+        <div class="card" id="prev-card" style="display:none">
+          <div class="card-head"><div class="card-title">👁 数据预览</div><div id="prev-sub" style="font-size:12px;color:var(--c-text3)"></div></div>
+          <div class="card-body" style="padding:0"><div class="tbl-wrap" id="prev-wrap"></div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card" style="margin-bottom:14px">
+          <div class="card-head"><div class="card-title">📋 上传记录</div></div>
+          <div id="upload-hist">
+            <div class="empty"><div class="ei">📂</div><p>暂无记录</p></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div class="card-title">📌 格式说明</div></div>
+          <div class="card-body" style="font-size:13px;color:var(--c-text2);line-height:1.9">
+            <b>必须包含：</b>
+            <ul style="padding-left:16px;margin:4px 0 10px">
+              <li>产品线 / Product Line</li>
+              <li>业务线 / Business Line</li>
+              <li>审核量 / Quantity / 数量</li>
+            </ul>
+            <b>可选字段：</b>
+            <ul style="padding-left:16px;margin:4px 0">
+              <li>业务单价（单价库有则自动匹配）</li>
+              <li>日期 / 备注</li>
+            </ul>
+            <div class="alert alert-info" style="margin-top:12px;font-size:12px">
+              🏷️ 优先从<strong>单价库</strong>自动匹配单价，未匹配的将弹出提示供手动补充
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ BIZ MANAGE ══════════ -->
+  <div class="page" id="page-bizmanage">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+
+      <!-- Product Lines -->
+      <div class="card">
+        <div class="card-head">
+          <div><div class="card-title">📦 产品线管理</div><div class="card-sub" id="p-count-lbl">共 0 条</div></div>
+          <button class="btn btn-primary btn-sm" onclick="openAddProduct()">+ 新增</button>
+        </div>
+        <div class="card-body" style="padding:0">
+          <table>
+            <thead><tr>
+              <th>产品线名称</th>
+              <th class="num">费用合计 (¥)</th>
+              <th class="num">业务线数</th>
+              <th>操作</th>
+            </tr></thead>
+            <tbody id="p-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Biz Lines -->
+      <div class="card">
+        <div class="card-head">
+          <div><div class="card-title">🔀 业务线管理</div><div class="card-sub" id="b-count-lbl">共 0 条</div></div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button class="btn btn-outline btn-sm" onclick="loadDemoData()">📊 加载示例</button>
+            <button class="btn btn-outline btn-sm" onclick="clearAllData()" style="color:#ef4444;border-color:#ef4444">🗑️ 清空数据</button>
+            <button class="btn btn-primary btn-sm" onclick="openAddBiz()">+ 新增</button>
+          </div>
+        </div>
+        <div class="card-body" style="padding:0">
+          <table>
+            <thead><tr>
+              <th>业务线</th>
+              <th>所属产品线</th>
+              <th class="num">单价 (¥)<span title="首次上传后锁定，可手动修改" style="cursor:help;margin-left:3px">🔒</span></th>
+              <th class="num">审核量</th>
+              <th class="num">费用 (¥)</th>
+              <th>操作</th>
+            </tr></thead>
+            <tbody id="b-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ DETAIL ══════════ -->
+  <div class="page" id="page-detail">
+    <div class="card">
+      <div class="card-head">
+        <div><div class="card-title">📋 费用明细</div><div class="card-sub" id="detail-sub">共 0 条业务线</div></div>
+        <div style="display:flex;gap:8px">
+          <select id="det-filter-p" onchange="renderDetail()" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--c-border2);font-size:12.5px;min-width:130px">
+            <option value="">全部产品线</option>
+          </select>
+          <button class="btn btn-outline btn-sm" onclick="exportDetail()">⬇ 导出 Excel</button>
+        </div>
+      </div>
+      <div class="card-body" style="padding:0">
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>产品线</th><th>业务线</th>
+              <th class="num">单条价格 (¥)</th>
+              <th class="num">审核量</th>
+              <th class="num">费用合计 (¥)</th>
+              <th>最后更新</th><th>操作</th>
+            </tr></thead>
+            <tbody id="det-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ REPORT ══════════ -->
+  <div class="page" id="page-report">
+    <div class="tabs">
+      <button class="tab active" onclick="switchRTab('overview',this)">总览</button>
+      <button class="tab" onclick="switchRTab('product',this)">产品线分析</button>
+      <button class="tab" onclick="switchRTab('biz',this)">业务线分析</button>
+    </div>
+
+    <div id="rt-overview">
+      <div class="chart-grid">
+        <div class="chart-box">
+          <div class="chart-box-title">🥧 各产品线费用占比（饼图）</div>
+          <div class="chart-wrap"><canvas id="rPie"></canvas></div>
+        </div>
+        <div class="chart-box">
+          <div class="chart-box-title">📊 各产品线费用对比（柱图）</div>
+          <div class="chart-wrap"><canvas id="rBar"></canvas></div>
+        </div>
+      </div>
+      <div class="chart-box" style="margin-bottom:18px">
+        <div class="chart-box-title">📉 业务线费用排行</div>
+        <div class="chart-wrap-sm"><canvas id="rRank"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">📑 汇总统计</div></div>
+        <div class="card-body" style="padding:0">
+          <div class="tbl-wrap">
+            <table id="r-sum-table">
+              <thead><tr>
+                <th>产品线</th>
+                <th class="num">业务线数</th>
+                <th class="num">审核量合计</th>
+                <th class="num">费用合计 (¥)</th>
+                <th class="num">占总费用</th>
+                <th class="num">平均单价 (¥)</th>
+              </tr></thead>
+              <tbody id="r-sum-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="rt-product" style="display:none">
+      <div class="chart-box" style="margin-bottom:18px">
+        <div class="chart-box-title" style="margin-bottom:10px">📦 产品线 — 业务线费用明细</div>
+        <select id="rp-select" onchange="renderProductDetail()" style="padding:7px 12px;border-radius:8px;border:1.5px solid var(--c-border2);font-size:13px;margin-bottom:14px;min-width:180px"></select>
+        <div class="chart-wrap"><canvas id="rPDetail"></canvas></div>
+      </div>
+    </div>
+    <div id="rt-biz" style="display:none">
+      <div class="chart-box">
+        <div class="chart-box-title">🔀 各业务线单价 vs 审核量</div>
+        <div class="chart-wrap"><canvas id="rBiz"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ EXPORT PAGE ══════════ -->
+  <div class="page" id="page-exportpage">
+    <div style="display:grid;grid-template-columns:340px 1fr;gap:18px">
+      <div>
+        <div class="card">
+          <div class="card-head"><div class="card-title">⚙️ 导出设置</div></div>
+          <div class="card-body">
+            <div class="form-grid" style="grid-template-columns:1fr">
+              <div class="fg"><label>报表类型</label>
+                <select id="exp-type">
+                  <option value="detail">费用明细（全部业务线）</option>
+                  <option value="summary">产品线汇总</option>
+                  <option value="both">完整报表（汇总+明细）</option>
+                </select>
+              </div>
+              <div class="fg"><label>产品线筛选</label>
+                <select id="exp-p"><option value="">全部</option></select>
+              </div>
+              <div class="fg"><label>导出格式</label>
+                <select id="exp-fmt"><option value="xlsx">Excel (.xlsx)</option><option value="csv">CSV (.csv)</option></select>
+              </div>
+            </div>
+            <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px">
+              <button class="btn btn-primary" onclick="doExport()">⬇ 立即导出</button>
+              <button class="btn btn-outline" onclick="previewExport()">👁 预览数据</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">📑 导出预览</div></div>
+        <div class="card-body" style="padding:0">
+          <div class="tbl-wrap" id="exp-prev">
+            <div class="empty"><div class="ei">📤</div><p>点击「预览数据」查看</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+</div><!-- /wrap -->
+
+<!-- ══ MODAL: Confirm Dialog ══ -->
+<div class="overlay" id="modal-confirm">
+  <div class="modal" style="width:380px">
+    <div class="modal-head">
+      <div class="modal-title" id="confirm-title">确认操作</div>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:14px;color:var(--c-text2);line-height:1.7" id="confirm-msg"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('modal-confirm')">取消</button>
+      <button class="btn btn-danger" id="confirm-ok-btn">确认删除</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: Price Change Confirm ══ -->
+<div class="overlay" id="modal-price-confirm">
+  <div class="modal" style="width:640px;max-width:96vw">
+    <div class="modal-head" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
+      <div class="modal-title" style="color:#fff">⚠️ 检测到单价变更</div>
+    </div>
+    <div class="modal-body" id="price-confirm-body" style="padding:16px"></div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" id="price-confirm-keep">保留原单价</button>
+      <button class="btn" id="price-confirm-update" style="background:#f59e0b;color:#fff;border-color:#f59e0b">确认更新单价</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: 未匹配业务线处理 ══ -->
+<div class="overlay" id="modal-unmatched">
+  <div class="modal" style="width:700px;max-width:97vw">
+    <div class="modal-head" style="background:linear-gradient(135deg,#dc2626,#b91c1c)">
+      <div class="modal-title" style="color:#fff">⚠️ 存在未匹配单价的业务线</div>
+    </div>
+    <div class="modal-body" style="padding:16px">
+      <div style="margin-bottom:10px;font-size:13px;color:var(--c-text2)">
+        以下业务线在<strong>单价库</strong>中未找到对应单价，请手动填写单价后并入汇总，或跳过。
+      </div>
+      <div style="overflow-x:auto;max-height:320px;overflow-y:auto;border:1px solid var(--c-border);border-radius:8px">
+        <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+          <thead>
+            <tr style="background:var(--c-bg);position:sticky;top:0">
+              <th style="padding:8px 10px;text-align:left;border-bottom:1px solid var(--c-border)">产品线</th>
+              <th style="padding:8px 10px;text-align:left;border-bottom:1px solid var(--c-border)">业务线</th>
+              <th style="padding:8px 10px;text-align:right;border-bottom:1px solid var(--c-border)">审核量</th>
+              <th style="padding:8px 10px;text-align:right;border-bottom:1px solid var(--c-border)">手动填写单价 (¥)</th>
+              <th style="padding:8px 10px;text-align:center;border-bottom:1px solid var(--c-border)">同时加入单价库</th>
+            </tr>
+          </thead>
+          <tbody id="unmatched-tbody"></tbody>
+        </table>
+      </div>
+      <div style="margin-top:10px;font-size:12px;color:var(--c-text3)">
+        💡 填写单价后点击「并入汇总」，将按填写价格计算费用；不填写则该行跳过。
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" id="unmatched-skip-all">全部跳过</button>
+      <button class="btn btn-primary" id="unmatched-merge-btn">✅ 并入汇总</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: Add/Edit PriceLib ══ -->
+<div class="overlay" id="modal-pricelib">
+  <div class="modal" style="width:420px">
+    <div class="modal-head">
+      <div class="modal-title" id="pl-modal-title">新增单价</div>
+      <button class="modal-close" onclick="closeModal('modal-pricelib')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-item">
+          <label>业务线名称 <span style="color:red">*</span></label>
+          <input id="pl-name" type="text" placeholder="如：信用贷款审核" />
+        </div>
+        <div class="form-item">
+          <label>所属产品线</label>
+          <input id="pl-product" type="text" placeholder="如：消费金融" list="p-datalist" />
+        </div>
+        <div class="form-item">
+          <label>固定单价 (¥) <span style="color:red">*</span></label>
+          <input id="pl-price" type="number" min="0" step="0.01" placeholder="0.00" />
+        </div>
+        <div class="form-item">
+          <label>备注</label>
+          <input id="pl-remark" type="text" placeholder="可选" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('modal-pricelib')">取消</button>
+      <button class="btn btn-primary" onclick="savePriceLib()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: Add/Edit BizLine ══ -->
+<div class="overlay" id="modal-biz">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="biz-modal-title">新增业务线</div>
+      <button class="modal-close" onclick="closeModal('modal-biz')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid" style="grid-template-columns:1fr 1fr">
+        <div class="fg span2"><label>业务线名称 *</label><input id="biz-name" placeholder="如：信用贷款审核" /></div>
+        <div class="fg"><label>所属产品线 *</label>
+          <input id="biz-product" placeholder="如：消费金融" list="p-datalist" />
+          <datalist id="p-datalist"></datalist>
+        </div>
+        <div class="fg">
+          <label>单条价格 (¥) * <span id="biz-price-lock" style="display:none" class="badge bd-warn locked">已锁定</span></label>
+          <input type="number" id="biz-price" placeholder="0.00" min="0" step="0.01" />
+          <div id="biz-price-hint" style="font-size:11.5px;color:var(--c-warn);margin-top:3px;display:none">🔒 业务线价格已锁定，可手动修改（修改后永久生效）</div>
+        </div>
+        <div class="fg"><label>审核量</label><input type="number" id="biz-qty" placeholder="0" min="0" /></div>
+        <div class="fg"><label>最后更新日期</label><input type="date" id="biz-date" /></div>
+        <div class="fg span2"><label>备注</label><textarea id="biz-remark" rows="2" placeholder="可选"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('modal-biz')">取消</button>
+      <button class="btn btn-primary" onclick="saveBiz()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: Add Product ══ -->
+<div class="overlay" id="modal-product">
+  <div class="modal" style="width:400px">
+    <div class="modal-head"><div class="modal-title" id="prod-modal-title">新增产品线</div>
+      <button class="modal-close" onclick="closeModal('modal-product')">✕</button></div>
+    <div class="modal-body">
+      <div class="fg"><label>产品线名称 *</label><input id="prod-name" placeholder="如：消费金融" /></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('modal-product')">取消</button>
+      <button class="btn btn-primary" onclick="saveProd()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: Edit BizLine Inline ══ -->
+<div class="overlay" id="modal-edit-biz">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">编辑业务线</div>
+      <button class="modal-close" onclick="closeModal('modal-edit-biz')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-biz-id" />
+      <div class="form-grid" style="grid-template-columns:1fr 1fr">
+        <div class="fg span2"><label>业务线名称</label><input id="edit-biz-name" /></div>
+        <div class="fg"><label>所属产品线</label><input id="edit-biz-product" list="p-datalist" /></div>
+        <div class="fg">
+          <label>单条价格 (¥)</label>
+          <input type="number" id="edit-biz-price" step="0.01" />
+          <div style="font-size:11.5px;color:var(--c-text3);margin-top:3px">修改单价将永久生效（不受上传锁定影响）</div>
+        </div>
+        <div class="fg"><label>审核量</label><input type="number" id="edit-biz-qty" /></div>
+        <div class="fg"><label>最后更新</label><input type="date" id="edit-biz-date" /></div>
+        <div class="fg span2"><label>备注</label><textarea id="edit-biz-remark" rows="2"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeModal('modal-edit-biz')">取消</button>
+      <button class="btn btn-primary" onclick="saveEditBiz()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<!-- ════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════ -->
+<script>
+// ╔══════════════════════════════╗
+// ║  DATA MODEL                  ║
+// ╚══════════════════════════════╝
+/*
+  DB.products:  [{ id, name }]
+  DB.bizLines:  [{
+    id, name, productId, productName,
+    unitPrice,       // 单条价格，首次设置后仅可手动改
+    priceLocked,     // boolean — 上传过一次后为 true
+    quantity,        // 审核量
+    updatedAt, remark
+  }]
+  DB.uploads:   [{ filename, time, added, updated, skipped, priceUpdated }]
+
+  Persistence: localStorage key = 'budgetSystem_v1'
+*/
+const STORAGE_KEY = 'budgetSystem_v1';
+
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return null;
+    return {
+      products: Array.isArray(parsed.products) ? parsed.products : [],
+      bizLines: Array.isArray(parsed.bizLines) ? parsed.bizLines : [],
+      uploads: Array.isArray(parsed.uploads) ? parsed.uploads : [],
+      priceLib: Array.isArray(parsed.priceLib) ? parsed.priceLib : [],
+    };
+  } catch (e) {
+    console.warn('加载本地数据失败', e);
+    return null;
+  }
+}
+
+function saveToStorage() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      products: DB.products,
+      bizLines: DB.bizLines,
+      uploads: DB.uploads,
+      priceLib: DB.priceLib,
+    }));
+  } catch (e) {
+    console.warn('保存数据失败', e);
+  }
+}
+
+// 初始化 DB：优先从 localStorage 加载，否则空数据
+const stored = loadFromStorage();
+const DB = stored || {
+  products: [],
+  bizLines: [],
+  uploads: [],
+  priceLib: [],  // [{ id, name, productName, unitPrice, remark, updatedAt }]
+};
+
+// ── demo seed data ──
+function seedDemo() {
+  const products = ['消费金融', '企业贷款', '供应链金融', '个人理财'];
+  const biz = [
+    ['信用贷款审核', '消费金融', 1200, 850],
+    ['消费分期审核', '消费金融', 800, 1200],
+    ['中小企业贷审核', '企业贷款', 5000, 320],
+    ['大额授信审核', '企业贷款', 20000, 45],
+    ['应收账款融资', '供应链金融', 3500, 180],
+    ['货押融资审核', '供应链金融', 2800, 210],
+    ['基金销售核查', '个人理财', 500, 2100],
+    ['保险代理审核', '个人理财', 360, 3400],
+  ];
+  products.forEach(n => DB.products.push({ id: uid(), name: n }));
+  biz.forEach(([name, pname, price, qty]) => {
+    const prod = DB.products.find(p => p.name === pname);
+    DB.bizLines.push({
+      id: uid(), name, productId: prod.id, productName: pname,
+      unitPrice: price, priceLocked: true, quantity: qty,
+      updatedAt: '2026-03-01', remark: ''
+    });
+  });
+}
+
+// ── helpers ──
+function uid() { return Math.random().toString(36).slice(2, 9) + Date.now().toString(36); }
+function fmt(n, d=2) { return Number(n).toLocaleString('zh-CN', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+function fmtPrice(n) { return Number(n).toLocaleString('zh-CN', { minimumFractionDigits: 4, maximumFractionDigits: 4 }); }
+function fmtInt(n) { return Number(n).toLocaleString('zh-CN', { minimumFractionDigits: 0, maximumFractionDigits: 0 }); }
+function today() { return new Date().toISOString().slice(0, 10); }
+function dateStr() { return today().replace(/-/g,''); }
+function bizCost(b) { return (b.unitPrice || 0) * (b.quantity || 0); }
+function productCost(pname) { return DB.bizLines.filter(b => b.productName === pname).reduce((s, b) => s + bizCost(b), 0); }
+function totalCost() { return DB.bizLines.reduce((s, b) => s + bizCost(b), 0); }
+
+// ╔══════════════════════════════╗
+// ║  INIT                        ║
+// ╚══════════════════════════════╝
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('topbar-date').textContent = new Date().toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric', weekday:'short' });
+
+  // 根据是否有本地数据决定初始化方式
+  const hasData = DB.bizLines.length > 0 || DB.products.length > 0;
+  if (!hasData) {
+    // 首次使用，加载示例数据作为演示
+    seedDemo();
+    toast('已加载示例数据，开始体验系统', 'ok');
+  } else {
+    toast(`欢迎回来！已恢复 ${DB.bizLines.length} 条业务线数据`, 'ok');
+  }
+
+  refreshAll();
+  setupDrop();
+});
+
+/** 清空所有数据 */
+function clearAllData() {
+  showConfirm(
+    '确认清空所有数据？',
+    '此操作将删除所有产品线、业务线、上传记录，且<strong>无法恢复</strong>。建议先导出备份。',
+    () => {
+      DB.products = [];
+      DB.bizLines = [];
+      DB.uploads = [];
+      localStorage.removeItem(STORAGE_KEY);
+      refreshAll();
+      toast('所有数据已清空', 'ok');
+    }
+  );
+}
+
+/** 重新加载示例数据（会覆盖现有数据） */
+function loadDemoData() {
+  showConfirm(
+    '确认加载示例数据？',
+    '此操作将<strong>覆盖</strong>现有所有数据，建议先导出备份。',
+    () => {
+      DB.products = [];
+      DB.bizLines = [];
+      DB.uploads = [];
+      seedDemo();
+      refreshAll();
+      toast('示例数据已加载', 'ok');
+    }
+  );
+}
+
+function refreshAll() {
+  updateStats();
+  renderSummaryTable();
+  renderDashProgress();
+  renderBizManage();
+  renderDetail();
+  populateFilters();
+  updateDashCharts();
+  saveToStorage(); // 每次数据变更后自动持久化
+}
+
+// ╔══════════════════════════════╗
+// ║  NAVIGATION                  ║
+// ╚══════════════════════════════╝
+const PAGE_TITLES = { dashboard:'工作台', pricelib:'单价库', upload:'报表上传', bizmanage:'业务线管理', detail:'费用明细', report:'可视化报表', exportpage:'导出报表' };
+function nav(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelector(`[data-page="${page}"]`).classList.add('active');
+  document.getElementById('topbar-title').textContent = PAGE_TITLES[page] || page;
+  if (page === 'report') { setTimeout(renderReportCharts, 80); }
+  if (page === 'exportpage') { populateExportFilters(); }
+  if (page === 'pricelib') { renderPriceLib(); }
+}
+
+// ╔══════════════════════════════╗
+// ║  STATS                       ║
+// ╚══════════════════════════════╝
+function updateStats() {
+  const total = totalCost();
+  const pSet = new Set(DB.bizLines.map(b => b.productName));
+  const qty = DB.bizLines.reduce((s, b) => s + (b.quantity || 0), 0);
+  document.getElementById('s-total').textContent = '¥' + fmt(total);
+  document.getElementById('s-pcount').textContent = pSet.size;
+  document.getElementById('s-bcount').textContent = DB.bizLines.length;
+  document.getElementById('s-qty').textContent = fmtInt(qty);
+}
+
+// ╔══════════════════════════════╗
+// ║  PURE CANVAS CHART ENGINE    ║
+// ╚══════════════════════════════╝
+const PALETTE = ['#2563eb','#7c3aed','#059669','#d97706','#dc2626','#0891b2','#9333ea','#16a34a','#ea580c','#6366f1'];
+
+// 图表画布缓存 { canvasId: { type, data, chart } }
+const CANVAS_CACHE = {};
+
+function clearCanvas(canvasId) {
+  const c = document.getElementById(canvasId);
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, c.width, c.height);
+}
+
+function drawDoughnut(canvasId, labels, data, colors) {
+  const c = document.getElementById(canvasId);
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  const total = data.reduce((a, b) => a + b, 0);
+  const cx = c.width / 2, cy = c.height / 2;
+  const R = Math.min(cx, cy) * 0.75;
+  const r = R * 0.55;
+
+  let start = -Math.PI / 2;
+  data.forEach((v, i) => {
+    const ratio = total > 0 ? v / total : 0;
+    const end = start + ratio * Math.PI * 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, start, end);
+    ctx.arc(cx, cy, r, end, start, true);
+    ctx.closePath();
+    ctx.fillStyle = colors[i % colors.length];
+    ctx.fill();
+    start = end;
+  });
+
+  // tooltip on mousemove
+  c.onmousemove = e => {
+    const rect = c.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    const dx = mx - cx, dy = my - cy;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    c.title = '';
+    if (dist > r && dist < R) {
+      let a = Math.atan2(dy, dx);
+      if (a < -Math.PI / 2) a += Math.PI * 2;
+      a += Math.PI / 2;
+      let s = 0, found = -1;
+      for (let i = 0; i < data.length; i++) {
+        const ratio = total > 0 ? data[i] / total : 0;
+        if (a >= s && a < s + ratio * Math.PI * 2) { found = i; break; }
+        s += ratio * Math.PI * 2;
+      }
+      if (found >= 0) c.title = `${labels[found]}: ¥${fmt(data[found])} (${(data[found]/total*100).toFixed(1)}%)`;
+    }
+  };
+}
+
+function drawBar(canvasId, labels, data, colors, horiz, showValue) {
+  const c = document.getElementById(canvasId);
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  const max = Math.max(...data, 0) || 1;
+  const PAD = horiz ? { t: 10, b: 10, l: 10, r: 60 } : { t: 10, b: 40, l: 10, r: 10 };
+  const gap = 8;
+  const labelH = horiz ? 0 : 30;
+
+  if (horiz) {
+    const chartW = W - PAD.l - PAD.r;
+    const rowH = Math.min((H - PAD.t - PAD.b) / Math.max(data.length, 1), 36);
+    data.forEach((v, i) => {
+      const barW = (v / max) * chartW;
+      const y = PAD.t + i * rowH + gap / 2;
+      ctx.fillStyle = colors[i % colors.length];
+      ctx.beginPath();
+      roundRect(ctx, PAD.l, y, barW, rowH - gap, 4);
+      ctx.fill();
+      if (showValue) {
+        ctx.fillStyle = '#374151';
+        ctx.font = '11px system-ui';
+        ctx.textAlign = 'left';
+        ctx.fillText('¥' + fmt(v), PAD.l + barW + 5, y + rowH / 2 + 4);
+      }
+      ctx.fillStyle = '#6b7280';
+      ctx.font = '11px system-ui';
+      ctx.textAlign = 'right';
+      const labelText = (labels[i] || '').length > 12 ? (labels[i] || '').slice(0, 12) + '…' : (labels[i] || '');
+      ctx.fillText(labelText, PAD.l - 4, y + rowH / 2 + 4);
+    });
+  } else {
+    const chartH = H - PAD.t - PAD.b - labelH;
+    const chartW = W - PAD.l - PAD.r;
+    const bw = (chartW / Math.max(data.length, 1)) - gap;
+    // Y axis gridlines
+    const yTicks = 5;
+    ctx.strokeStyle = '#e5e7eb';
+    ctx.fillStyle = '#9ca3af';
+    ctx.font = '10px system-ui';
+    ctx.textAlign = 'right';
+    for (let t = 0; t <= yTicks; t++) {
+      const yVal = (max / yTicks) * t;
+      const yPx = PAD.t + labelH + chartH - (yVal / max) * chartH;
+      ctx.beginPath(); ctx.moveTo(PAD.l, yPx); ctx.lineTo(PAD.l + chartW, yPx); ctx.stroke();
+      ctx.fillText('¥' + (yVal >= 10000 ? (yVal / 10000).toFixed(0) + 'w' : fmt(yVal, 0)), PAD.l - 4, yPx - 2);
+    }
+    data.forEach((v, i) => {
+      const barH = (v / max) * chartH;
+      const x = PAD.l + i * (bw + gap) + gap / 2;
+      const y = PAD.t + labelH + chartH - barH;
+      ctx.fillStyle = colors[i % colors.length];
+      ctx.beginPath();
+      roundRect(ctx, x, y, bw, barH, 4);
+      ctx.fill();
+      if (showValue) {
+        ctx.fillStyle = '#374151';
+        ctx.font = '10px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText('¥' + (v >= 10000 ? (v / 10000).toFixed(1) + 'w' : fmt(v)), x + bw / 2, y - 4);
+      }
+      ctx.fillStyle = '#6b7280';
+      ctx.font = '11px system-ui';
+      ctx.textAlign = 'center';
+      const labelText = (labels[i] || '').length > 6 ? (labels[i] || '').slice(0, 6) + '…' : (labels[i] || '');
+      ctx.fillText(labelText, x + bw / 2, PAD.t + labelH + chartH + 14);
+    });
+  }
+}
+
+function drawMixedBarLine(canvasId, labels, barData, lineData, barColor, lineColor, yFmt, y2Fmt) {
+  const c = document.getElementById(canvasId);
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  const W = c.width, H = c.height;
+  const PAD = { t: 10, b: 10, l: 10, r: 60 };
+  const labelH = 30;
+  const chartH = H - PAD.t - PAD.b - labelH;
+  const chartW = W - PAD.l - PAD.r;
+  const maxBar = Math.max(...barData, 0) || 1;
+  const maxLine = Math.max(...lineData, 0) || 1;
+  const bw = (chartW / Math.max(barData.length, 1)) - 8;
+
+  // Y1 (left) gridlines
+  ctx.strokeStyle = '#e5e7eb';
+  ctx.fillStyle = '#9ca3af';
+  ctx.font = '10px system-ui';
+  ctx.textAlign = 'right';
+  for (let t = 0; t <= 4; t++) {
+    const yVal = (maxBar / 4) * t;
+    const yPx = PAD.t + labelH + chartH - (yVal / maxBar) * chartH;
+    ctx.beginPath(); ctx.moveTo(PAD.l, yPx); ctx.lineTo(PAD.l + chartW, yPx); ctx.stroke();
+    ctx.fillText((yFmt ? yFmt(yVal) : '¥' + fmt(yVal, 0)), PAD.l - 4, yPx - 2);
+  }
+  // Y2 (right) ticks
+  ctx.textAlign = 'left';
+  for (let t = 0; t <= 4; t++) {
+    const yVal = (maxLine / 4) * t;
+    const yPx = PAD.t + labelH + chartH - (yVal / maxLine) * chartH;
+    ctx.fillText((y2Fmt ? y2Fmt(yVal) : fmtInt(yVal)), PAD.l + chartW + 4, yPx - 2);
+  }
+
+  // Bars
+  barData.forEach((v, i) => {
+    const barH = (v / maxBar) * chartH;
+    const x = PAD.l + i * (bw + 8) + 4;
+    const y = PAD.t + labelH + chartH - barH;
+    ctx.fillStyle = barColor;
+    ctx.beginPath();
+    roundRect(ctx, x, y, bw, barH, 4);
+    ctx.fill();
+    ctx.fillStyle = '#6b7280';
+    ctx.font = '11px system-ui';
+    ctx.textAlign = 'center';
+    const labelText = (labels[i] || '').length > 8 ? (labels[i] || '').slice(0, 8) + '…' : (labels[i] || '');
+    ctx.fillText(labelText, x + bw / 2, PAD.t + labelH + chartH + 14);
+  });
+
+  // Line + dots
+  const pts = lineData.map((v, i) => ({
+    x: PAD.l + i * (bw + 8) + 4 + bw / 2,
+    y: PAD.t + labelH + chartH - (v / maxLine) * chartH
+  }));
+  ctx.strokeStyle = lineColor;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+  ctx.stroke();
+  pts.forEach(p => {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = lineColor;
+    ctx.fill();
+  });
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  if (w <= 0 || h <= 0) return;
+  r = Math.min(r, w / 2, h / 2);
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+
+function resizeCanvas(id) {
+  const c = document.getElementById(id);
+  if (!c) return;
+  const p = c.parentElement;
+  c.width = p.clientWidth || 400;
+  c.height = p.clientHeight || 300;
+}
+
+function updateDashCharts() {
+  const pNames = [...new Set(DB.bizLines.map(b => b.productName))];
+  const pCosts = pNames.map(n => productCost(n));
+
+  resizeCanvas('cPie');
+  clearCanvas('cPie');
+  if (pNames.length > 0) drawDoughnut('cPie', pNames, pCosts, PALETTE);
+}
+
+function renderDashProgress() {
+  const pNames = [...new Set(DB.bizLines.map(b => b.productName))];
+  const total = totalCost();
+  const container = document.getElementById('dash-progress');
+  if (pNames.length === 0) { container.innerHTML = '<div class="empty"><div class="ei">📊</div><p>暂无数据</p></div>'; return; }
+  container.innerHTML = pNames.map((n, i) => {
+    const cost = productCost(n);
+    const pct = total > 0 ? (cost / total * 100).toFixed(1) : 0;
+    return `<div class="prog-row">
+      <div class="prog-head"><span class="prog-lbl">${n}</span><span class="prog-val">${pct}% · ¥${fmt(cost)}</span></div>
+      <div class="prog-track"><div class="prog-fill" style="width:${pct}%;background:${PALETTE[i%PALETTE.length]}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ╔══════════════════════════════╗
+// ║  SUMMARY TABLE               ║
+// ╚══════════════════════════════╝
+function renderSummaryTable() {
+  const pNames = [...new Set(DB.bizLines.map(b => b.productName))];
+  const total = totalCost();
+  const tbody = document.getElementById('summary-tbody');
+  if (pNames.length === 0) { tbody.innerHTML = '<tr><td colspan="5"><div class="empty"><div class="ei">📊</div><p>暂无数据，请上传报表</p></div></td></tr>'; return; }
+  let html = '';
+  pNames.forEach(pname => {
+    const lines = DB.bizLines.filter(b => b.productName === pname);
+    const pcost = lines.reduce((s,b) => s+bizCost(b), 0);
+    const pct = total > 0 ? (pcost/total*100).toFixed(1) : 0;
+    html += `<tr class="tr-product">
+      <td>📦 ${pname}</td>
+      <td class="num">—</td>
+      <td class="num">${fmtInt(lines.reduce((s,b)=>s+(b.quantity||0),0))}</td>
+      <td class="num">¥${fmt(pcost)}</td>
+      <td class="num"><span class="badge bd-blue">${pct}%</span></td>
+    </tr>`;
+    lines.forEach(b => {
+      const bc = bizCost(b);
+      const bpct = total > 0 ? (bc/total*100).toFixed(1) : 0;
+      html += `<tr class="tr-sub">
+        <td>&nbsp;&nbsp;↳ ${b.name}</td>
+        <td class="num">${b.priceLocked ? '<span class="badge bd-warn locked" title="上传后已锁定">¥'+fmtPrice(b.unitPrice)+'</span>' : '¥'+fmtPrice(b.unitPrice)}</td>
+        <td class="num">${fmtInt(b.quantity)}</td>
+        <td class="num">¥${fmt(bc)}</td>
+        <td class="num">${bpct}%</td>
+      </tr>`;
+    });
+  });
+  html += `<tr class="tr-total">
+    <td>🏁 总计</td><td class="num">—</td>
+    <td class="num">${fmtInt(DB.bizLines.reduce((s,b)=>s+(b.quantity||0),0))}</td>
+    <td class="num">¥${fmt(total)}</td>
+    <td class="num">100%</td>
+  </tr>`;
+  tbody.innerHTML = html;
+}
+
+// ╔══════════════════════════════════════════╗
+// ║  PRICE LIB (单价库)                       ║
+// ╚══════════════════════════════════════════╝
+let editingPLId = null;
+let plParsedData = null;
+
+/** 渲染单价库列表 */
+function renderPriceLib() {
+  document.getElementById('pl-count-lbl').textContent = `共 ${DB.priceLib.length} 条`;
+  const tbody = document.getElementById('pl-tbody');
+  tbody.innerHTML = DB.priceLib.length === 0
+    ? `<tr><td colspan="5"><div class="empty" style="padding:20px"><div class="ei">🏷️</div><p>暂无单价记录，点击「导入单价表」或「手动新增」</p></div></td></tr>`
+    : DB.priceLib.map(p => `<tr>
+        <td><strong>${p.name}</strong></td>
+        <td>${p.productName ? `<span class="badge bd-blue">${p.productName}</span>` : '<span style="color:var(--c-text3)">—</span>'}</td>
+        <td class="num"><strong>¥${fmtPrice(p.unitPrice)}</strong></td>
+        <td style="color:var(--c-text3);font-size:12px">${p.remark || '—'}</td>
+        <td>
+          <button class="btn btn-outline btn-xs" onclick="openEditPriceLib('${p.id}')">编辑</button>
+          <button class="btn btn-danger btn-xs" style="margin-left:4px" onclick="deletePriceLib('${p.id}')">删除</button>
+        </td>
+      </tr>`).join('');
+}
+
+/** 打开新增 */
+function openAddPriceLib() {
+  editingPLId = null;
+  document.getElementById('pl-modal-title').textContent = '新增单价';
+  document.getElementById('pl-name').value = '';
+  document.getElementById('pl-product').value = '';
+  document.getElementById('pl-price').value = '';
+  document.getElementById('pl-remark').value = '';
+  document.getElementById('modal-pricelib').classList.add('show');
+}
+
+/** 打开编辑 */
+function openEditPriceLib(id) {
+  const p = DB.priceLib.find(x => x.id === id);
+  if (!p) return;
+  editingPLId = id;
+  document.getElementById('pl-modal-title').textContent = '编辑单价';
+  document.getElementById('pl-name').value = p.name;
+  document.getElementById('pl-product').value = p.productName || '';
+  document.getElementById('pl-price').value = p.unitPrice;
+  document.getElementById('pl-remark').value = p.remark || '';
+  document.getElementById('modal-pricelib').classList.add('show');
+}
+
+/** 保存单价库条目 */
+function savePriceLib() {
+  const name = document.getElementById('pl-name').value.trim();
+  const product = document.getElementById('pl-product').value.trim();
+  const price = parseFloat(document.getElementById('pl-price').value);
+  const remark = document.getElementById('pl-remark').value.trim();
+  if (!name) { toast('请填写业务线名称', 'err'); return; }
+  if (isNaN(price) || price < 0) { toast('请填写有效的单价', 'err'); return; }
+  if (editingPLId) {
+    const p = DB.priceLib.find(x => x.id === editingPLId);
+    if (p) { p.name = name; p.productName = product; p.unitPrice = price; p.remark = remark; p.updatedAt = today(); }
+  } else {
+    // 检查重复名
+    const dup = DB.priceLib.find(x => x.name === name);
+    if (dup) { dup.productName = product; dup.unitPrice = price; dup.remark = remark; dup.updatedAt = today(); toast('已更新同名单价', 'ok'); }
+    else DB.priceLib.push({ id: uid(), name, productName: product, unitPrice: price, remark, updatedAt: today() });
+  }
+  closeModal('modal-pricelib');
+  toast(editingPLId ? '单价已更新' : '单价已新增', 'ok');
+  renderPriceLib();
+  saveToStorage();
+}
+
+/** 删除单价库条目 */
+function deletePriceLib(id) {
+  const p = DB.priceLib.find(x => x.id === id);
+  if (!p) return;
+  showConfirm('确认删除单价？', `删除「${p.name}」(¥${fmtPrice(p.unitPrice)}) 后不可恢复，已导入的业务线数据不受影响。`, () => {
+    DB.priceLib = DB.priceLib.filter(x => x.id !== id);
+    toast('已删除', 'ok');
+    renderPriceLib();
+    saveToStorage();
+  });
+}
+
+/** 从单价库查找单价（按业务线名精确匹配） */
+function lookupPrice(bizName) {
+  const item = DB.priceLib.find(p => p.name === bizName);
+  return item ? item.unitPrice : null;
+}
+
+// ── 单价库 Excel 导入 ──
+function onPriceLibFileSelect(e) {
+  const f = e.target.files[0];
+  if (!f) return;
+  document.getElementById('pl-file-inp').value = '';
+  const ext = f.name.split('.').pop().toLowerCase();
+  if (!['xlsx','xls','csv'].includes(ext)) { toast('不支持的格式', 'err'); return; }
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      let headers, rows;
+      if (ext === 'csv') {
+        const lines = ev.target.result.split('\n').filter(l => l.trim());
+        headers = parseCSV(lines[0]);
+        rows = lines.slice(1).map(parseCSV).filter(r => r.some(c => c.trim()));
+      } else {
+        const wb = XLSX.read(ev.target.result, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const raw = XLSX.utils.sheet_to_json(ws, { header:1 });
+        headers = (raw[0]||[]).map(h => String(h||'').trim());
+        rows = raw.slice(1).map(r => headers.map((_,i) => String(r[i]!==undefined?r[i]:'')));
+        rows = rows.filter(r => r.some(c => c.trim()));
+      }
+      plParsedData = { headers, rows, filename: f.name };
+      buildPLMapping(headers);
+      toast(`解析成功 ${rows.length} 行，请确认字段映射`, 'ok');
+    } catch(err) { toast('解析失败: ' + err.message, 'err'); }
+  };
+  if (ext === 'csv') reader.readAsText(f, 'utf-8');
+  else reader.readAsArrayBuffer(f);
+}
+
+const PL_KEYWORDS = {
+  bizLine:   ['业务线','business line','biz','业务','服务线','业务类型','名称','name'],
+  unitPrice: ['单价','unit price','unitprice','价格','price','单条价格','单位价格','费率'],
+  productLine:['产品线','product line','product','产品','产品分类'],
+  remark:    ['备注','remark','说明','note'],
+};
+const PL_LABELS = { bizLine:'业务线 *', unitPrice:'单价 *', productLine:'产品线', remark:'备注' };
+
+function buildPLMapping(headers) {
+  const card = document.getElementById('pl-import-card');
+  card.style.display = 'block';
+  let html = `<div class="map-grid">
+    <div style="font-size:11.5px;font-weight:700;color:var(--c-text3)">文件列名</div><div></div>
+    <div style="font-size:11.5px;font-weight:700;color:var(--c-text3)">映射字段</div>`;
+  headers.forEach((h, i) => {
+    const key = h.toLowerCase().replace(/\s/g,'');
+    let auto = '';
+    for(const [f, kws] of Object.entries(PL_KEYWORDS)) {
+      if(kws.some(k => key.includes(k.replace(/\s/g,'')))) { auto = f; break; }
+    }
+    const opts = [['','-- 忽略 --'], ...Object.entries(PL_LABELS)].map(([v,l]) =>
+      `<option value="${v}" ${v===auto?'selected':''}>${l}</option>`).join('');
+    html += `<div class="map-src">${h}</div><div class="map-arr">→</div><div><select id="plmp-${i}">${opts}</select></div>`;
+  });
+  html += '</div>';
+  document.getElementById('pl-map-content').innerHTML = html;
+}
+
+function doPriceLibImport() {
+  if (!plParsedData) return;
+  const { headers, rows } = plParsedData;
+  const colMap = {};
+  headers.forEach((_, i) => { const v = document.getElementById('plmp-' + i)?.value; if(v) colMap[v] = i; });
+  if (colMap.bizLine === undefined) { toast('请映射「业务线」字段', 'err'); return; }
+  if (colMap.unitPrice === undefined) { toast('请映射「单价」字段', 'err'); return; }
+
+  let added=0, updated=0;
+  rows.forEach(row => {
+    const name = (row[colMap.bizLine]||'').trim();
+    const price = parseFloat(row[colMap.unitPrice]);
+    if (!name || isNaN(price) || price < 0) return;
+    const productName = colMap.productLine !== undefined ? (row[colMap.productLine]||'').trim() : '';
+    const remark = colMap.remark !== undefined ? (row[colMap.remark]||'').trim() : '';
+    const existing = DB.priceLib.find(p => p.name === name);
+    if (existing) { existing.unitPrice = price; existing.productName = productName||existing.productName; existing.remark = remark||existing.remark; existing.updatedAt = today(); updated++; }
+    else { DB.priceLib.push({ id: uid(), name, productName, unitPrice: price, remark, updatedAt: today() }); added++; }
+  });
+
+  resetPriceLibImport();
+  renderPriceLib();
+  saveToStorage();
+  toast(`单价库导入完成：新增 ${added} 条，更新 ${updated} 条`, 'ok');
+}
+
+function resetPriceLibImport() {
+  plParsedData = null;
+  document.getElementById('pl-import-card').style.display = 'none';
+  document.getElementById('pl-map-content').innerHTML = '';
+}
+
+// ── 未匹配业务线处理 ──
+let _unmatchedPendingCallback = null;
+
+function showUnmatchedModal(unmatchedRows, onConfirm) {
+  _unmatchedPendingCallback = onConfirm;
+  const tbody = document.getElementById('unmatched-tbody');
+  tbody.innerHTML = unmatchedRows.map((r, idx) => `
+    <tr style="border-bottom:1px solid var(--c-border)">
+      <td style="padding:7px 10px">${r.pname}</td>
+      <td style="padding:7px 10px"><strong>${r.bname}</strong></td>
+      <td style="padding:7px 10px;text-align:right">${fmtInt(r.qty)}</td>
+      <td style="padding:7px 10px;text-align:right">
+        <input type="number" id="um-price-${idx}" min="0" step="0.01" placeholder="填写单价"
+          style="width:110px;padding:5px 8px;border:1px solid var(--c-border);border-radius:6px;font-size:12px;text-align:right" />
+      </td>
+      <td style="padding:7px 10px;text-align:center">
+        <input type="checkbox" id="um-savelib-${idx}" checked title="同时保存到单价库" />
+      </td>
+    </tr>`).join('');
+
+  // 绑定按钮
+  const btnMerge = document.getElementById('unmatched-merge-btn');
+  const btnSkip  = document.getElementById('unmatched-skip-all');
+  const newMerge = btnMerge.cloneNode(true);
+  const newSkip  = btnSkip.cloneNode(true);
+  btnMerge.parentNode.replaceChild(newMerge, btnMerge);
+  btnSkip.parentNode.replaceChild(newSkip, btnSkip);
+
+  newMerge.addEventListener('click', () => {
+    const filled = unmatchedRows.map((r, idx) => {
+      const price = parseFloat(document.getElementById('um-price-' + idx)?.value);
+      const saveToLib = document.getElementById('um-savelib-' + idx)?.checked;
+      return { ...r, manualPrice: isNaN(price) || price <= 0 ? null : price, saveToLib };
+    }).filter(r => r.manualPrice !== null);
+    document.getElementById('modal-unmatched').classList.remove('show');
+    if (_unmatchedPendingCallback) _unmatchedPendingCallback(filled);
+  });
+
+  newSkip.addEventListener('click', () => {
+    document.getElementById('modal-unmatched').classList.remove('show');
+    if (_unmatchedPendingCallback) _unmatchedPendingCallback([]);
+  });
+
+  document.getElementById('modal-unmatched').classList.add('show');
+}
+
+// ╔══════════════════════════════╗
+// ║  BIZ MANAGE PAGE             ║
+// ╚══════════════════════════════╝
+function renderBizManage() {
+  // Products — merge from DB.products + bizLines实际存在的
+  const pFromBiz = [...new Set(DB.bizLines.map(b => b.productName))];
+  const pFromDB  = DB.products.map(p => p.name);
+  const allPNames = [...new Set([...pFromDB, ...pFromBiz])];
+
+  document.getElementById('p-count-lbl').textContent = `共 ${allPNames.length} 条`;
+  const ptbody = document.getElementById('p-tbody');
+  ptbody.innerHTML = allPNames.length === 0
+    ? `<tr><td colspan="4"><div class="empty" style="padding:16px"><p>暂无产品线，点击「新增」添加</p></div></td></tr>`
+    : allPNames.map(n => {
+        const lines = DB.bizLines.filter(b => b.productName === n);
+        // escape single quotes in name to avoid onclick issues
+        const escapedN = n.replace(/'/g, "\\'");
+        return `<tr>
+          <td><strong>${n}</strong></td>
+          <td class="num">¥${fmt(lines.reduce((s,b)=>s+bizCost(b),0))}</td>
+          <td class="num">${lines.length}</td>
+          <td><button class="btn btn-danger btn-xs" onclick="deleteProduct('${escapedN}')">删除</button></td>
+        </tr>`;
+      }).join('');
+
+  // Biz lines
+  document.getElementById('b-count-lbl').textContent = `共 ${DB.bizLines.length} 条`;
+  const btbody = document.getElementById('b-tbody');
+  btbody.innerHTML = DB.bizLines.length === 0
+    ? `<tr><td colspan="6"><div class="empty" style="padding:16px"><p>暂无业务线，点击「新增」添加</p></div></td></tr>`
+    : DB.bizLines.map(b => `<tr>
+        <td><strong>${b.name}</strong></td>
+        <td><span class="badge bd-blue">${b.productName}</span></td>
+        <td class="num">
+          ${b.priceLocked
+            ? `<span class="badge bd-warn locked" title="上传后锁定，可手动修改">¥${fmtPrice(b.unitPrice)}</span>`
+            : `¥${fmtPrice(b.unitPrice)}`}
+        </td>
+        <td class="num">${fmtInt(b.quantity)}</td>
+        <td class="num"><strong>¥${fmt(bizCost(b))}</strong></td>
+        <td>
+          <button class="btn btn-outline btn-xs" onclick="openEditBiz('${b.id}')">编辑</button>
+          <button class="btn btn-danger btn-xs" style="margin-left:4px" onclick="deleteBiz('${b.id}')">删除</button>
+        </td>
+      </tr>`).join('');
+
+  // datalist
+  refreshPDatalist();
+}
+
+function refreshPDatalist() {
+  const pFromBiz = [...new Set(DB.bizLines.map(b => b.productName))];
+  const pFromDB  = DB.products.map(p => p.name);
+  const allPNames = [...new Set([...pFromDB, ...pFromBiz])];
+  document.querySelectorAll('#p-datalist').forEach(dl => {
+    dl.innerHTML = allPNames.map(n => `<option value="${n}">`).join('');
+  });
+}
+
+// ╔══════════════════════════════╗
+// ║  DETAIL PAGE                 ║
+// ╚══════════════════════════════╝
+function renderDetail() {
+  const fProd = document.getElementById('det-filter-p')?.value || '';
+  const data = DB.bizLines.filter(b => !fProd || b.productName === fProd);
+  document.getElementById('detail-sub').textContent = `共 ${data.length} 条业务线`;
+  const tbody = document.getElementById('det-tbody');
+  tbody.innerHTML = data.length === 0 ?
+    `<tr><td colspan="7"><div class="empty"><div class="ei">📋</div><p>暂无数据</p></div></td></tr>` :
+    data.map(b => `<tr>
+      <td><span class="badge bd-blue">${b.productName}</span></td>
+      <td>${b.name}</td>
+      <td class="num">${b.priceLocked ? `<span class="badge bd-warn locked">¥${fmtPrice(b.unitPrice)}</span>` : `¥${fmtPrice(b.unitPrice)}`}</td>
+      <td class="num">${fmtInt(b.quantity)}</td>
+      <td class="num"><strong>¥${fmt(bizCost(b))}</strong></td>
+      <td>${b.updatedAt || '—'}</td>
+      <td><button class="btn btn-outline btn-xs" onclick="openEditBiz('${b.id}')">编辑</button></td>
+    </tr>`).join('');
+}
+
+// ╔══════════════════════════════╗
+// ║  REPORT CHARTS (Pure Canvas) ║
+// ╚══════════════════════════════╝
+function renderReportCharts() {
+  const pNames = [...new Set(DB.bizLines.map(b => b.productName))];
+  const pCosts = pNames.map(n => productCost(n));
+  const total = totalCost();
+
+  // rPie
+  resizeCanvas('rPie');
+  clearCanvas('rPie');
+  if (pNames.length > 0) drawDoughnut('rPie', pNames, pCosts, PALETTE);
+
+  // rBar
+  resizeCanvas('rBar');
+  clearCanvas('rBar');
+  if (pNames.length > 0) drawBar('rBar', pNames, pCosts, PALETTE.slice(0, pNames.length), false, true);
+
+  // rRank
+  const sorted = [...DB.bizLines].sort((a, b) => bizCost(b) - bizCost(a)).slice(0, 10);
+  resizeCanvas('rRank');
+  clearCanvas('rRank');
+  if (sorted.length > 0) {
+    drawBar('rRank',
+      sorted.map(b => b.productName + '·' + b.name),
+      sorted.map(b => bizCost(b)),
+      sorted.map((_, i) => PALETTE[i % PALETTE.length]),
+      true, true
+    );
+  }
+
+  // Summary table
+  const rsumTbody = document.getElementById('r-sum-tbody');
+  rsumTbody.innerHTML = pNames.map((n, i) => {
+    const lines = DB.bizLines.filter(b => b.productName === n);
+    const cost = productCost(n);
+    const qty = lines.reduce((s, b) => s + (b.quantity || 0), 0);
+    const pct = total > 0 ? (cost / total * 100).toFixed(1) : 0;
+    const avgPrice = qty > 0 ? (cost / qty).toFixed(2) : 0;
+    return `<tr>
+      <td><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${PALETTE[i % PALETTE.length]};margin-right:6px"></span>${n}</td>
+      <td class="num">${lines.length}</td>
+      <td class="num">${fmtInt(qty)}</td>
+      <td class="num"><strong>¥${fmt(cost)}</strong></td>
+      <td class="num"><span class="badge bd-blue">${pct}%</span></td>
+      <td class="num">¥${fmt(avgPrice)}</td>
+    </tr>`;
+  }).join('') + `<tr class="tr-total">
+    <td>合计</td>
+    <td class="num">${DB.bizLines.length}</td>
+    <td class="num">${fmtInt(DB.bizLines.reduce((s, b) => s + (b.quantity || 0), 0))}</td>
+    <td class="num">¥${fmt(total)}</td>
+    <td class="num">100%</td>
+    <td class="num">—</td>
+  </tr>`;
+
+  // product detail select
+  const rpSelect = document.getElementById('rp-select');
+  rpSelect.innerHTML = pNames.map(n => `<option value="${n}">${n}</option>`).join('');
+  renderProductDetail();
+
+  // biz chart
+  renderBizChart();
+}
+
+function renderProductDetail() {
+  const pname = document.getElementById('rp-select').value;
+  const lines = DB.bizLines.filter(b => b.productName === pname);
+  resizeCanvas('rPDetail');
+  clearCanvas('rPDetail');
+  if (lines.length === 0) return;
+  drawMixedBarLine('rPDetail',
+    lines.map(b => b.name),
+    lines.map(b => bizCost(b)),
+    lines.map(b => b.quantity || 0),
+    '#2563eb', '#d97706',
+    v => '¥' + fmt(v, 0),
+    v => fmtInt(v) + '单'
+  );
+}
+
+function renderBizChart() {
+  const sorted = [...DB.bizLines].sort((a, b) => a.unitPrice - b.unitPrice);
+  resizeCanvas('rBiz');
+  clearCanvas('rBiz');
+  if (sorted.length === 0) return;
+  drawMixedBarLine('rBiz',
+    sorted.map(b => b.name),
+    sorted.map(b => b.unitPrice),
+    sorted.map(b => b.quantity || 0),
+    '#7c3aed', '#059669',
+    v => '¥' + fmt(v, 0),
+    v => fmtInt(v) + '单'
+  );
+}
+
+function switchRTab(tab, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  ['rt-overview', 'rt-product', 'rt-biz'].forEach(id => document.getElementById(id).style.display = 'none');
+  document.getElementById('rt-' + tab).style.display = 'block';
+  // Resize + redraw charts for the active tab after DOM paint
+  setTimeout(() => {
+    if (tab === 'overview') { resizeCanvas('rPie'); resizeCanvas('rBar'); resizeCanvas('rRank'); updateDashCharts(); }
+    if (tab === 'product') renderProductDetail();
+    if (tab === 'biz') renderBizChart();
+  }, 60);
+}
+
+// ╔══════════════════════════════╗
+// ║  UPLOAD LOGIC                ║
+// ╚══════════════════════════════╝
+let parsedData = null;
+
+function setupDrop() {
+  const zone = document.getElementById('drop-zone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('over'));
+  zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('over'); const f = e.dataTransfer.files[0]; if(f) processFile(f); });
+}
+
+function onFileSelect(e) { const f = e.target.files[0]; if(f) processFile(f); }
+
+function processFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!['xlsx','xls','csv'].includes(ext)) { toast('不支持的格式，请上传 xlsx/xls/csv', 'err'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      let headers, rows;
+      if (ext === 'csv') {
+        const lines = e.target.result.split('\n').filter(l => l.trim());
+        headers = parseCSV(lines[0]);
+        rows = lines.slice(1).map(parseCSV).filter(r => r.some(c => c.trim()));
+      } else {
+        const wb = XLSX.read(e.target.result, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const raw = XLSX.utils.sheet_to_json(ws, { header:1 });
+        headers = (raw[0]||[]).map(h => String(h||'').trim());
+        rows = raw.slice(1).map(r => headers.map((_,i) => String(r[i]!==undefined?r[i]:'')));
+        rows = rows.filter(r => r.some(c => c.trim()));
+      }
+      parsedData = { headers, rows, filename: file.name };
+      showParseResult(file, parsedData);
+      buildMapping(headers);
+      buildPreview(parsedData);
+    } catch(err) { toast('文件解析失败: ' + err.message, 'err'); }
+  };
+  if (ext === 'csv') reader.readAsText(file, 'utf-8');
+  else reader.readAsArrayBuffer(file);
+}
+
+function parseCSV(line) {
+  const res=[]; let cur='',inQ=false;
+  for(const c of line){ if(c==='"'){inQ=!inQ}else if(c===','&&!inQ){res.push(cur.trim());cur=''}else cur+=c; }
+  res.push(cur.trim()); return res;
+}
+
+function showParseResult(file, data) {
+  const el = document.getElementById('parse-result');
+  el.style.display = 'block';
+  el.innerHTML = `<div class="alert alert-success">✅ 解析成功 — <strong>${file.name}</strong>，共 ${data.headers.length} 列 × ${data.rows.length} 行</div>`;
+}
+
+// ── auto mapping keywords ──
+const FKEYWORDS = {
+  productLine: ['产品线','product line','product','产品','产品分类'],
+  bizLine:     ['业务线','business line','biz','业务','服务线','业务类型'],
+  unitPrice:   ['单价','业务单价','unit price','unitprice','价格','price','单条价格','单位价格'],
+  quantity:    ['审核量','数量','qty','quantity','件数','单量','审核单量'],
+  date:        ['日期','date','时间','创建日期'],
+  remark:      ['备注','remark','说明','note'],
+};
+const FLABELS = {
+  productLine:'产品线 *', bizLine:'业务线 *', unitPrice:'单条价格（首次有效）',
+  quantity:'审核量 *', date:'日期', remark:'备注',
+};
+function autoMap(h) {
+  const key = h.toLowerCase().replace(/\s/g,'');
+  for(const [f, kws] of Object.entries(FKEYWORDS)) {
+    if(kws.some(k => key.includes(k.replace(/\s/g,'')))) return f;
+  }
+  return '';
+}
+
+function buildMapping(headers) {
+  const card = document.getElementById('map-card');
+  card.style.display = 'block';
+  let html = `<div class="map-grid">
+    <div style="font-size:11.5px;font-weight:700;color:var(--c-text3);padding-bottom:2px">文件列名</div>
+    <div></div>
+    <div style="font-size:11.5px;font-weight:700;color:var(--c-text3);padding-bottom:2px">映射到系统字段</div>`;
+  headers.forEach((h, i) => {
+    const auto = autoMap(h);
+    const opts = [['','-- 忽略 --'], ...Object.entries(FLABELS)].map(([v,l]) =>
+      `<option value="${v}" ${v===auto?'selected':''}>${l}</option>`).join('');
+    html += `<div class="map-src">${h}</div><div class="map-arr">→</div><div><select id="mp-${i}">${opts}</select></div>`;
+  });
+  html += '</div>';
+  document.getElementById('map-content').innerHTML = html;
+  toast('字段自动识别完成，请确认后导入', 'ok');
+}
+
+function buildPreview(data) {
+  const card = document.getElementById('prev-card');
+  card.style.display = 'block';
+  document.getElementById('prev-sub').textContent = `前 8 行预览 / 共 ${data.rows.length} 行`;
+  let html = '<table><thead><tr>' + data.headers.map(h => `<th>${h}</th>`).join('') + '</tr></thead><tbody>';
+  html += data.rows.slice(0, 8).map(r => '<tr>' + r.map(c => `<td>${c}</td>`).join('') + '</tr>').join('');
+  html += '</tbody></table>';
+  document.getElementById('prev-wrap').innerHTML = html;
+}
+
+function doImport() {
+  if (!parsedData) return;
+  const { headers, rows, filename } = parsedData;
+
+  // build col->field map
+  const colMap = {};
+  headers.forEach((_, i) => {
+    const v = document.getElementById('mp-' + i)?.value;
+    if (v) colMap[v] = i;
+  });
+
+  if (colMap.productLine === undefined) { toast('请映射「产品线」字段', 'err'); return; }
+  if (colMap.bizLine === undefined) { toast('请映射「业务线」字段', 'err'); return; }
+  if (colMap.quantity === undefined) { toast('请映射「审核量」字段', 'err'); return; }
+
+  // ── 第一遍扫描：收集单价变更项 ──────────────────────────
+  const priceChanges = [];
+  const unmatchedRows = [];
+
+  rows.forEach((row) => {
+    const pname = (row[colMap.productLine]||'').trim();
+    const bname = (row[colMap.bizLine]||'').trim();
+    if (!pname || !bname) return;
+    const qty = parseInt(row[colMap.quantity]) || 0;
+    const dateVal = colMap.date !== undefined ? (row[colMap.date]||'').trim() : today();
+    const remark = colMap.remark !== undefined ? (row[colMap.remark]||'').trim() : '';
+
+    const existing = DB.bizLines.find(b => b.productName === pname && b.name === bname);
+
+    // ── 单价来源优先级：单价库 > 文件中的单价列 > 已有记录单价 ──
+    const libPrice = lookupPrice(bname);
+    const filePrice = colMap.unitPrice !== undefined ? (parseFloat(row[colMap.unitPrice]) || 0) : 0;
+    const resolvedPrice = libPrice !== null ? libPrice : (filePrice > 0 ? filePrice : null);
+
+    if (existing) {
+      // 检查单价变更
+      if (resolvedPrice !== null && Math.abs(resolvedPrice - existing.unitPrice) > 0.0001) {
+        priceChanges.push({ existing, newPrice: resolvedPrice, pname, bname, qty, dateVal, remark });
+      }
+    } else {
+      // 新业务线：无单价来源则进入未匹配队列
+      if (resolvedPrice === null) {
+        unmatchedRows.push({ pname, bname, qty, dateVal, remark });
+      }
+    }
+  });
+
+  // 决策流程：先处理单价变更确认，再处理未匹配
+  const proceed = (overrideMap) => {
+    if (unmatchedRows.length > 0) {
+      showUnmatchedModal(unmatchedRows, (filledRows) => {
+        executeImport(filename, colMap, rows, overrideMap, filledRows);
+      });
+    } else {
+      executeImport(filename, colMap, rows, overrideMap, []);
+    }
+  };
+
+  if (priceChanges.length > 0) {
+    showPriceChangeConfirm(priceChanges, filename, colMap, rows, proceed);
+  } else {
+    proceed({});
+  }
+}
+
+/** 弹出单价变更确认弹窗，onDecide(overrideMap) 回调 */
+function showPriceChangeConfirm(priceChanges, filename, colMap, rows, onDecide) {
+  // 构造弹窗内容
+  let tableHtml = `
+    <div style="margin-bottom:10px;font-size:13px;color:var(--c-text2)">
+      检测到以下 <strong>${priceChanges.length}</strong> 条业务线的单价与现有记录不一致，请确认是否以最新单价覆盖：
+    </div>
+    <div style="overflow-x:auto;max-height:260px;overflow-y:auto;border:1px solid var(--c-border);border-radius:8px">
+      <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+        <thead>
+          <tr style="background:var(--c-bg2);position:sticky;top:0">
+            <th style="padding:8px 10px;text-align:left;border-bottom:1px solid var(--c-border)">产品线</th>
+            <th style="padding:8px 10px;text-align:left;border-bottom:1px solid var(--c-border)">业务线</th>
+            <th style="padding:8px 10px;text-align:right;border-bottom:1px solid var(--c-border)">原单价</th>
+            <th style="padding:8px 10px;text-align:right;border-bottom:1px solid var(--c-border)">新单价</th>
+            <th style="padding:8px 10px;text-align:center;border-bottom:1px solid var(--c-border)">变化</th>
+          </tr>
+        </thead>
+        <tbody>`;
+
+  priceChanges.forEach(c => {
+    const diff = c.newPrice - c.existing.unitPrice;
+    const pct = ((diff / c.existing.unitPrice) * 100).toFixed(1);
+    const up = diff > 0;
+    const arrow = up ? '▲' : '▼';
+    const color = up ? '#ef4444' : '#22c55e';
+    tableHtml += `<tr style="border-bottom:1px solid var(--c-border)">
+      <td style="padding:7px 10px">${c.pname}</td>
+      <td style="padding:7px 10px"><strong>${c.bname}</strong></td>
+      <td style="padding:7px 10px;text-align:right;color:var(--c-text3)">¥${fmtPrice(c.existing.unitPrice)}</td>
+      <td style="padding:7px 10px;text-align:right;font-weight:600">¥${fmtPrice(c.newPrice)}</td>
+      <td style="padding:7px 10px;text-align:center;color:${color};font-weight:600">${arrow} ${Math.abs(parseFloat(pct))}%</td>
+    </tr>`;
+  });
+
+  tableHtml += `</tbody></table></div>
+    <div style="margin-top:10px;font-size:12px;color:var(--c-text3)">
+      💡 点击「确认更新单价」：覆盖以上单价并继续导入；点击「保留原单价」：单价不变，仅更新审核量
+    </div>`;
+
+  // 使用自定义价格确认弹窗
+  const overlay = document.getElementById('modal-price-confirm');
+  document.getElementById('price-confirm-body').innerHTML = tableHtml;
+
+  // 绑定按钮事件（克隆节点防止重复绑定）
+  const btnUpdate = document.getElementById('price-confirm-update');
+  const btnKeep   = document.getElementById('price-confirm-keep');
+  const newUpdate = btnUpdate.cloneNode(true);
+  const newKeep   = btnKeep.cloneNode(true);
+  btnUpdate.parentNode.replaceChild(newUpdate, btnUpdate);
+  btnKeep.parentNode.replaceChild(newKeep, btnKeep);
+
+  newUpdate.addEventListener('click', () => {
+    overlay.classList.remove('show');
+    // 构建单价覆盖映射
+    const overrideMap = {};
+    priceChanges.forEach(c => { overrideMap[c.pname + '||' + c.bname] = c.newPrice; });
+    if (onDecide) onDecide(overrideMap);
+  });
+  newKeep.addEventListener('click', () => {
+    overlay.classList.remove('show');
+    if (onDecide) onDecide({});
+  });
+
+  overlay.classList.add('show');
+}
+
+/** 实际执行导入逻辑
+ * @param overrideMap   {pname||bname → newPrice}  单价覆盖（用户确认）
+ * @param filledRows    未匹配业务线中用户手动填写的条目 [{pname,bname,qty,dateVal,remark,manualPrice,saveToLib}]
+ */
+function executeImport(filename, colMap, rows, overrideMap, filledRows) {
+  let added=0, updated=0, skipped=0, priceUpdated=0;
+
+  rows.forEach((row) => {
+    const pname = (row[colMap.productLine]||'').trim();
+    const bname = (row[colMap.bizLine]||'').trim();
+    if (!pname || !bname) { skipped++; return; }
+
+    const qty = parseInt(row[colMap.quantity]) || 0;
+    const dateVal = colMap.date !== undefined ? (row[colMap.date]||'').trim() : today();
+    const remark = colMap.remark !== undefined ? (row[colMap.remark]||'').trim() : '';
+
+    const existing = DB.bizLines.find(b => b.productName === pname && b.name === bname);
+
+    // 单价来源：overrideMap > 单价库 > 文件列
+    const key = pname + '||' + bname;
+    const libPrice = lookupPrice(bname);
+    const filePrice = colMap.unitPrice !== undefined ? (parseFloat(row[colMap.unitPrice]) || 0) : 0;
+    const resolvedPrice = overrideMap[key] !== undefined ? overrideMap[key]
+                        : (libPrice !== null ? libPrice : (filePrice > 0 ? filePrice : null));
+
+    if (existing) {
+      existing.quantity = qty;
+      existing.updatedAt = dateVal || today();
+      if (remark) existing.remark = remark;
+      if (resolvedPrice !== null && overrideMap[key] !== undefined) {
+        existing.unitPrice = resolvedPrice;
+        existing.priceLocked = true;
+        priceUpdated++;
+      } else if (resolvedPrice !== null && libPrice !== null) {
+        // 单价库有更新时同步
+        if (Math.abs(resolvedPrice - existing.unitPrice) > 0.0001) {
+          existing.unitPrice = resolvedPrice;
+          priceUpdated++;
+        }
+      }
+      updated++;
+    } else {
+      // 新条目：无单价则跳过（未匹配走 filledRows）
+      if (resolvedPrice === null) { skipped++; return; }
+      if (!DB.products.find(p => p.name === pname)) DB.products.push({ id: uid(), name: pname });
+      DB.bizLines.push({
+        id: uid(), name: bname, productId: '',
+        productName: pname, unitPrice: resolvedPrice,
+        priceLocked: true,
+        quantity: qty, updatedAt: dateVal || today(), remark
+      });
+      added++;
+    }
+  });
+
+  // 合并手动填写的未匹配业务线
+  (filledRows || []).forEach(r => {
+    if (!DB.products.find(p => p.name === r.pname)) DB.products.push({ id: uid(), name: r.pname });
+    const existing = DB.bizLines.find(b => b.productName === r.pname && b.name === r.bname);
+    if (existing) {
+      existing.quantity = r.qty;
+      existing.updatedAt = r.dateVal || today();
+      if (r.manualPrice) { existing.unitPrice = r.manualPrice; existing.priceLocked = true; priceUpdated++; }
+      updated++;
+    } else {
+      DB.bizLines.push({
+        id: uid(), name: r.bname, productId: '',
+        productName: r.pname, unitPrice: r.manualPrice,
+        priceLocked: true,
+        quantity: r.qty, updatedAt: r.dateVal || today(), remark: r.remark
+      });
+      added++;
+    }
+    // 可选：同时保存到单价库
+    if (r.saveToLib && r.manualPrice) {
+      const libExisting = DB.priceLib.find(p => p.name === r.bname);
+      if (libExisting) { libExisting.unitPrice = r.manualPrice; libExisting.updatedAt = today(); }
+      else DB.priceLib.push({ id: uid(), name: r.bname, productName: r.pname, unitPrice: r.manualPrice, remark: '', updatedAt: today() });
+    }
+  });
+
+  DB.uploads.unshift({ filename, time: new Date().toLocaleString('zh-CN'), added, updated, skipped, priceUpdated });
+  renderUploadHist();
+  resetUpload();
+  refreshAll();
+
+  const extra = priceUpdated > 0 ? `，同步单价 ${priceUpdated} 条` : '';
+  const manualNote = filledRows && filledRows.length > 0 ? `，手动补录 ${filledRows.length} 条` : '';
+  toast(`导入完成：新增 ${added} 条，更新审核量 ${updated} 条，跳过 ${skipped} 条${extra}${manualNote}`, 'ok');
+  setTimeout(() => nav('dashboard'), 900);
+}
+
+function resetUpload() {
+  parsedData = null;
+  document.getElementById('file-inp').value = '';
+  document.getElementById('parse-result').style.display = 'none';
+  document.getElementById('map-card').style.display = 'none';
+  document.getElementById('prev-card').style.display = 'none';
+}
+
+function renderUploadHist() {
+  const el = document.getElementById('upload-hist');
+  el.innerHTML = DB.uploads.length === 0
+    ? '<div class="empty"><div class="ei">📂</div><p>暂无记录</p></div>'
+    : DB.uploads.map(u => {
+        const priceTag = u.priceUpdated > 0
+          ? `<span class="badge bd-warn" style="margin-left:6px">单价更新 ${u.priceUpdated}</span>`
+          : '';
+        return `<div style="padding:11px 16px;border-bottom:1px solid var(--c-border)">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:13px;font-weight:600">📄 ${u.filename}</span>
+            <div style="display:flex;gap:4px;align-items:center">
+              <span class="badge bd-green">+${u.added}</span>
+              ${priceTag}
+            </div>
+          </div>
+          <div style="font-size:11.5px;color:var(--c-text3);margin-top:2px">${u.time} · 更新量 ${u.updated} · 跳过 ${u.skipped}</div>
+        </div>`;
+      }).join('');
+}
+
+// ╔══════════════════════════════╗
+// ║  BIZ LINE MODALS             ║
+// ╚══════════════════════════════╝
+let editingBizId = null;
+
+function openAddBiz() {
+  editingBizId = null;
+  document.getElementById('biz-modal-title').textContent = '新增业务线';
+  ['biz-name','biz-product','biz-remark'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('biz-price').value = '';
+  document.getElementById('biz-qty').value = '';
+  document.getElementById('biz-date').value = today();
+  document.getElementById('biz-price-lock').style.display = 'none';
+  document.getElementById('biz-price-hint').style.display = 'none';
+  document.getElementById('biz-price').readOnly = false;
+  refreshPDatalist();
+  document.getElementById('modal-biz').classList.add('show');
+}
+
+function saveBiz() {
+  const name = document.getElementById('biz-name').value.trim();
+  const pname = document.getElementById('biz-product').value.trim();
+  const price = parseFloat(document.getElementById('biz-price').value) || 0;
+  const qty = parseInt(document.getElementById('biz-qty').value) || 0;
+  if (!name || !pname || price <= 0) { toast('请填写业务线名称、产品线和单价', 'err'); return; }
+
+  if (!DB.products.find(p => p.name === pname)) DB.products.push({ id: uid(), name: pname });
+
+  DB.bizLines.push({
+    id: uid(), name, productId: '', productName: pname,
+    unitPrice: price, priceLocked: false, quantity: qty,
+    updatedAt: document.getElementById('biz-date').value || today(),
+    remark: document.getElementById('biz-remark').value
+  });
+  toast('业务线已添加', 'ok');
+  closeModal('modal-biz');
+  refreshAll();
+}
+
+function openEditBiz(id) {
+  const b = DB.bizLines.find(x => x.id === id);
+  if (!b) return;
+  document.getElementById('edit-biz-id').value = id;
+  document.getElementById('edit-biz-name').value = b.name;
+  document.getElementById('edit-biz-product').value = b.productName;
+  document.getElementById('edit-biz-price').value = b.unitPrice;
+  document.getElementById('edit-biz-qty').value = b.quantity;
+  document.getElementById('edit-biz-date').value = b.updatedAt || today();
+  document.getElementById('edit-biz-remark').value = b.remark || '';
+  refreshPDatalist();
+  document.getElementById('modal-edit-biz').classList.add('show');
+}
+
+function saveEditBiz() {
+  const id = document.getElementById('edit-biz-id').value;
+  const b = DB.bizLines.find(x => x.id === id);
+  if (!b) return;
+  const newName = document.getElementById('edit-biz-name').value.trim();
+  const newProd = document.getElementById('edit-biz-product').value.trim();
+  const newPrice = parseFloat(document.getElementById('edit-biz-price').value) || 0;
+  const newQty = parseInt(document.getElementById('edit-biz-qty').value) || 0;
+  if (!newName || !newProd || newPrice <= 0) { toast('请填写完整信息', 'err'); return; }
+
+  b.name = newName; b.productName = newProd; b.unitPrice = newPrice;
+  b.quantity = newQty; b.updatedAt = document.getElementById('edit-biz-date').value || today();
+  b.remark = document.getElementById('edit-biz-remark').value;
+  if (!DB.products.find(p => p.name === newProd)) DB.products.push({ id: uid(), name: newProd });
+
+  toast('已更新', 'ok');
+  closeModal('modal-edit-biz');
+  refreshAll();
+}
+
+function deleteBiz(id) {
+  const b = DB.bizLines.find(x => x.id === id);
+  if (!b) return;
+  showConfirm(
+    `确认删除业务线「${b.name}」？`,
+    `删除后该业务线数据将无法恢复，其所在产品线「${b.productName}」的费用将相应减少。`,
+    () => {
+      DB.bizLines = DB.bizLines.filter(x => x.id !== id);
+      toast('业务线已删除', 'ok');
+      refreshAll();
+    }
+  );
+}
+
+function deleteProduct(pname) {
+  const count = DB.bizLines.filter(b => b.productName === pname).length;
+  showConfirm(
+    `确认删除产品线「${pname}」？`,
+    `该产品线下共有 <strong>${count}</strong> 条业务线，删除后所有数据将无法恢复。`,
+    () => {
+      DB.bizLines = DB.bizLines.filter(b => b.productName !== pname);
+      DB.products = DB.products.filter(p => p.name !== pname);
+      toast('产品线已删除', 'ok');
+      refreshAll();
+    }
+  );
+}
+
+// ╔══════════════════════════════╗
+// ║  PRODUCT MODAL               ║
+// ╚══════════════════════════════╝
+function openAddProduct() {
+  document.getElementById('prod-name').value = '';
+  document.getElementById('modal-product').classList.add('show');
+}
+function saveProd() {
+  const name = document.getElementById('prod-name').value.trim();
+  if (!name) { toast('请填写产品线名称', 'err'); return; }
+  if (DB.products.find(p => p.name === name)) { toast('产品线已存在', 'warn'); return; }
+  DB.products.push({ id: uid(), name });
+  toast('产品线已添加', 'ok');
+  closeModal('modal-product');
+  refreshAll();
+}
+
+// ╔══════════════════════════════╗
+// ║  FILTERS / SELECT HELPERS    ║
+// ╚══════════════════════════════╝
+function populateFilters() {
+  const pNames = [...new Set(DB.bizLines.map(b => b.productName))];
+  ['det-filter-p'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const cur = el.value;
+    el.innerHTML = `<option value="">全部产品线</option>` + pNames.map(n => `<option value="${n}" ${n===cur?'selected':''}>${n}</option>`).join('');
+  });
+}
+
+function populateExportFilters() {
+  const pNames = [...new Set(DB.bizLines.map(b => b.productName))];
+  const el = document.getElementById('exp-p');
+  if (el) el.innerHTML = `<option value="">全部</option>` + pNames.map(n => `<option value="${n}">${n}</option>`).join('');
+}
+
+// ╔══════════════════════════════╗
+// ║  EXPORT                      ║
+// ╚══════════════════════════════╝
+function getExportRows(type, fProd) {
+  let biz = DB.bizLines;
+  if (fProd) biz = biz.filter(b => b.productName === fProd);
+  const total = totalCost();
+
+  if (type === 'summary') {
+    const pNames = [...new Set(biz.map(b => b.productName))];
+    const rows = [['产品线','业务线数','审核量合计','费用合计(¥)','占总费用%']];
+    pNames.forEach(n => {
+      const lines = biz.filter(b => b.productName === n);
+      const cost = lines.reduce((s,b)=>s+bizCost(b),0);
+      const qty = lines.reduce((s,b)=>s+(b.quantity||0),0);
+      rows.push([n, lines.length, qty, cost.toFixed(2), total>0?(cost/total*100).toFixed(1)+'%':'0%']);
+    });
+    rows.push(['合计','',biz.reduce((s,b)=>s+(b.quantity||0),0),total.toFixed(2),'100%']);
+    return rows;
+  }
+
+  if (type === 'detail') {
+    const rows = [['产品线','业务线','单条价格(¥)','价格是否锁定','审核量','费用合计(¥)','最后更新','备注']];
+    biz.forEach(b => rows.push([b.productName,b.name,b.unitPrice,b.priceLocked?'是':'否',b.quantity,bizCost(b).toFixed(2),b.updatedAt,b.remark]));
+    return rows;
+  }
+
+  // both
+  const sum = getExportRows('summary', fProd);
+  const det = getExportRows('detail', fProd);
+  return { sum, det };
+}
+
+function previewExport() {
+  const type = document.getElementById('exp-type').value;
+  const fProd = document.getElementById('exp-p').value;
+  if (type === 'both') { document.getElementById('exp-prev').innerHTML = '<div class="empty"><div class="ei">📋</div><p>完整报表含多个Sheet，请直接导出查看</p></div>'; return; }
+  const rows = getExportRows(type, fProd);
+  let html = '<table><thead><tr>' + rows[0].map(h=>`<th>${h}</th>`).join('') + '</tr></thead><tbody>';
+  html += rows.slice(1,11).map(r=>'<tr>'+r.map(c=>`<td>${c}</td>`).join('')+'</tr>').join('');
+  html += '</tbody></table>';
+  if (rows.length > 11) html += `<div style="padding:10px 14px;font-size:12px;color:var(--c-text3)">仅预览前 10 行，共 ${rows.length-1} 行</div>`;
+  document.getElementById('exp-prev').innerHTML = html;
+  toast('预览已生成', 'ok');
+}
+
+function doExport() {
+  const type = document.getElementById('exp-type').value;
+  const fProd = document.getElementById('exp-p').value;
+  const fmt_type = document.getElementById('exp-fmt').value;
+
+  const wb = XLSX.utils.book_new();
+
+  if (type === 'both') {
+    const { sum, det } = getExportRows('both', fProd);
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sum), '产品线汇总');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(det), '费用明细');
+  } else {
+    const rows = getExportRows(type, fProd);
+    const sheetName = type === 'summary' ? '产品线汇总' : '费用明细';
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), sheetName);
+  }
+
+  const filename = `预算结算报表_${dateStr()}`;
+  if (fmt_type === 'csv') {
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const csv = XLSX.utils.sheet_to_csv(ws);
+    const blob = new Blob(['\uFEFF'+csv], {type:'text/csv;charset=utf-8;'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename+'.csv'; a.click();
+  } else {
+    XLSX.writeFile(wb, filename + '.xlsx');
+  }
+  toast(`导出成功：${filename}.${fmt_type}`, 'ok');
+}
+
+function exportDetail() {
+  const fProd = document.getElementById('det-filter-p')?.value || '';
+  const rows = getExportRows('detail', fProd);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), '费用明细');
+  XLSX.writeFile(wb, `费用明细_${dateStr()}.xlsx`);
+  toast('导出成功', 'ok');
+}
+
+// ╔══════════════════════════════╗
+// ║  MODAL                       ║
+// ╚══════════════════════════════╝
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+// click backdrop to close
+document.querySelectorAll('.overlay').forEach(o => o.addEventListener('click', e => { if(e.target===o) o.classList.remove('show'); }));
+
+// ╔══════════════════════════════╗
+// ║  CONFIRM DIALOG              ║
+// ╚══════════════════════════════╝
+function showConfirm(title, msg, onOk) {
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-msg').innerHTML = msg;
+  const btn = document.getElementById('confirm-ok-btn');
+  // Remove old listeners
+  const newBtn = btn.cloneNode(true);
+  btn.parentNode.replaceChild(newBtn, btn);
+  newBtn.addEventListener('click', () => {
+    closeModal('modal-confirm');
+    onOk();
+  });
+  document.getElementById('modal-confirm').classList.add('show');
+}
+
+// ╔══════════════════════════════╗
+// ║  TOAST                       ║
+// ╚══════════════════════════════╝
+function toast(msg, type='info') {
+  const icons = { ok:'✅', err:'❌', warn:'⚠️', info:'ℹ️' };
+  const tc = document.getElementById('toasts');
+  const el = document.createElement('div');
+  el.className = 'toast ' + (type==='ok'?'ok':type==='err'?'err':type==='warn'?'warn':'');
+  el.innerHTML = `<span>${icons[type]||'ℹ️'}</span><span>${msg}</span>`;
+  tc.appendChild(el);
+  setTimeout(() => { el.style.animation='tOut .3s ease forwards'; setTimeout(()=>el.remove(),350); }, 3500);
+}
+</script>
+</body>
+</html>
